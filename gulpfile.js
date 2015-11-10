@@ -1,5 +1,7 @@
 // Include gulp
-var gulp = require('gulp'); 
+var gulp = require('gulp'),
+	Server = require('karma').Server,
+	runSequence = require('run-sequence').use(gulp);
 
 // Include Our Plugins
 var jshint = require('gulp-jshint');
@@ -18,5 +20,54 @@ gulp.task('uglify', function() {
         .pipe(gulp.dest('./dist'));
 });
 
+gulp.task('test:server', function(done) {
+	test(true, done);
+});
+
+gulp.task('test:build', function(done) {
+	test(false, done);
+});
+
 // Default Task
-gulp.task('default', ['lint', 'uglify']);
+gulp.task('default', function() {
+
+	runSequence(
+		'test:build',
+		'lint',
+		'uglify'
+	);
+
+});
+
+function test(isServer, done) {
+
+	var server = new Server({
+
+		singleRun: !isServer,
+		files: [
+			'test/common.js',
+			'src/**/*.js',
+			'test/*.spec.js'
+		],
+		frameworks: [
+			'browserify',
+			'jasmine'
+		],
+		browsers: ['PhantomJS'],
+		preprocessors: {
+			'test/**/*.js': ['browserify']
+		}
+
+	}, function(exitCode) {
+
+		if(exitCode) {
+			process.exit();
+			return;
+		}
+
+		done();
+	});
+
+	server.start();
+
+}
