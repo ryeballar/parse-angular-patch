@@ -35,6 +35,7 @@
     "karma-browserify": "^4.4.0",
     "karma-jasmine": "^0.3.6",
     "karma-phantomjs-launcher": "^0.2.1",
+    "karma-spec-reporter": "0.0.22",
     "ngMockHttp": "git+https://github.com/ryeballar/ngMockHttp.git",
     "parse": "^1.6.8",
     "phantomjs": "^1.9.18",
