@@ -27,15 +27,15 @@ describe('parse-angular', function() {
 		expect(item instanceof Parse.Error);
 	};
 
-	beforeEach(module('ngMockE2E'));
+	beforeEach(angular.mock.module('ngMockE2E'));
 
 	beforeEach(angular.mock.http.init);
 
-	beforeEach(module('parse-angular.enhance', function(ParseProvider) {
+	beforeEach(angular.mock.module('parse-angular.enhance', function(ParseProvider) {
 		provider = ParseProvider;
 	}));
 
-	beforeEach(inject(function($httpBackend, _$q_, _Parse_, _$rootScope_) {
+	beforeEach(angular.mock.inject(function($httpBackend, _$q_, _Parse_, _$rootScope_) {
 
 		var parsApi = function(url) {
 			return url.indexOf('https://api.parse.com/') === 0;
@@ -81,13 +81,13 @@ describe('parse-angular', function() {
 			Parse.initialize = initialize;
 		});
 
-		xit('should have an array of interceptors', function() {
+		it('should have an array of interceptors', function() {
 			expect(angular.isArray(provider.interceptors)).toBe(true);
 		}, TIMEOUT);
 
-		xit('should call Parse.initialize when ParseProvider.initialize is called', function() {
-			provider.initialize(APP_ID, JS_ID);
-			expect(Parse.initialize).toHaveBeenCalledWith(APP_ID, JS_ID);
+		it('should call Parse.initialize when ParseProvider.initialize is called', function() {
+			provider.initialize(PARSE_CREDENTIALS.APP_ID, PARSE_CREDENTIALS.JS_ID);
+			expect(Parse.initialize).toHaveBeenCalledWith(PARSE_CREDENTIALS.APP_ID, PARSE_CREDENTIALS.JS_ID);
 		}, TIMEOUT);
 
 	});
@@ -100,7 +100,7 @@ describe('parse-angular', function() {
 
 		describe('Parse.Object.prototype', function() {
 
-			xit('it should run all prototpye methods', function(done) {
+			it('it should run all prototpye methods', function(done) {
 
 				mockObject.set('field1', 'field1');
 				mockObject.set('field2', 'field2');
@@ -138,7 +138,7 @@ describe('parse-angular', function() {
 
 		describe('Parse.Object', function() {
 
-			xit('should run all static methods', function(done) {
+			it('should run all static methods', function(done) {
 
 				var objects;
 
@@ -222,7 +222,7 @@ describe('parse-angular', function() {
 
 			describe('count()', function() {
 
-				xit('should count all objects', function(done) {
+				it('should count all objects', function(done) {
 					query.count()
 					.then(function(result) {
 						expect(angular.isNumber(result)).toBe(true);
@@ -234,7 +234,7 @@ describe('parse-angular', function() {
 
 			describe('find()', function() {
 
-				xit('should find all objects', function(done) {
+				it('should find all objects', function(done) {
 
 					query.find()
 					.then(function(results) {
@@ -250,7 +250,7 @@ describe('parse-angular', function() {
 
 			describe('first()', function() {
 
-				xit('should get the first item of results', function(done) {
+				it('should get the first item of results', function(done) {
 					query.first()
 					.then(function(item) {
 						expect(item instanceof MockClass);
@@ -262,7 +262,7 @@ describe('parse-angular', function() {
 
 			describe('get()', function() {
 
-				xit('should get a specific item', function(done) {
+				it('should get a specific item', function(done) {
 
 					var id;
 
@@ -282,7 +282,7 @@ describe('parse-angular', function() {
 
 			describe('each()', function() {
 
-				xit('should iterate over each searched item', function(done) {
+				it('should iterate over each searched item', function(done) {
 
 					query.limit(3);
 
@@ -310,7 +310,7 @@ describe('parse-angular', function() {
 
 			describe('run()', function() {
 
-				xit('should run a cloud code', function(done) {
+				it('should run a cloud code', function(done) {
 
 					Parse.Cloud.run('hello')
 					.then(function(result) {
@@ -335,7 +335,7 @@ describe('parse-angular', function() {
 
 			});
 
-			xit('shoud run all prototype methods', function(done) {
+			it('shoud run all prototype methods', function(done) {
 
 				var newUser,
 				oldSession;
@@ -370,7 +370,7 @@ describe('parse-angular', function() {
 
 		describe('Parse.User', function() {
 
-			xit('should run all static methods', function(done) {
+			it('should run all static methods', function(done) {
 
 				var User = Parse.User;
 				var newUser;
@@ -420,7 +420,7 @@ describe('parse-angular', function() {
 		describe('Parse.Config', function() {
 
 			describe('get()', function() {
-				xit('should get config', function(done) {
+				it('should get config', function(done) {
 					Parse.Config.get()
 					.then(function(config) {
 						expect(config.get('param1')).toBe('param1');
@@ -434,7 +434,7 @@ describe('parse-angular', function() {
 		describe('Parse.File', function() {
 
 			describe('save()', function() {
-				xit('should save a file', function(done) {
+				it('should save a file', function(done) {
 					var bytes = [ 0xBE, 0xEF, 0xCA, 0xFE ];
 					var file = new Parse.File("myfile.txt", bytes);
 
@@ -453,7 +453,7 @@ describe('parse-angular', function() {
 
 			describe('current()', function() {
 
-				xit('should get the currently loggedin session', function(done) {
+				it('should get the currently loggedin session', function(done) {
 
 					var createUser = function() {
 						return new Parse.User({
@@ -490,7 +490,7 @@ describe('parse-angular', function() {
 
 			describe('current()', function() {
 
-				xit('should get the current geo location', function(done) {
+				it('should get the current geo location', function(done) {
 
 					var coords = { latitude: 40.714224, longitude: -73.961452 };
 
@@ -524,7 +524,7 @@ describe('parse-angular', function() {
 			});
 
 
-			xit('Parse.Query.prototype.loadMore()', function(done) {
+			it('Parse.Query.prototype.loadMore()', function(done) {
 
 				var loadMore = function() {
 					return query.loadMore()

@@ -56,7 +56,9 @@ function test(isServer, done) {
 		browsers: ['PhantomJS'],
 		preprocessors: {
 			'test/**/*.js': ['browserify'],
-		}
+			'src/**/*.js': ['browserify']
+		},
+		reporters: ['spec']
 
 	}, function(exitCode) {
 
