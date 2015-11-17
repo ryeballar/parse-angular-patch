@@ -1,6 +1,28 @@
-(function(ng, Parse){
+(function(context) {
 
 	'use strict';
+
+	var ng, Parse;
+
+	var throwError = function(message) {
+		throw new Error('[parse-angular-patch]: ' + message);
+	};
+
+	if(process && process.browser) { // if browser if running with browserify
+		ng = require('angular');
+		Parse = require('parse');
+	} else { // else get resources from window
+		ng = context.angular;
+		Parse = context.Parse;
+	}
+
+	if(!ng) {
+		throwError('AngularJS was not loaded');
+	}
+
+	if(!Parse) {
+		throwError('Parse was not loaded');
+	}
 
 	var forEach = ng.forEach,
 		module = ng.module,
@@ -39,6 +61,7 @@
 
 		var provider = {};
 
+		// interceptors
 		provider.interceptors = [];
 
 		provider.initialize = function() {
@@ -47,9 +70,9 @@
 
 		provider.$get = ['$q', '$injector', '$rootScope', function($q, $injector, $rootScope) {
 
-			var successInterceptors = [],
+			var isPatchRunning = false,
+				successInterceptors = [],
 				errorInterceptors = [];
-
 			//-------------------------------------
 			// Structured object of what we need to update
 			//-------------------------------------
@@ -161,6 +184,7 @@
 				return sequentialPromise($q.reject(error), errorInterceptors, CATCH_KEY);
 			};
 
+
 			// function to create a patched method
 			var patchMethod = function(method) {
 
@@ -168,9 +192,18 @@
 
 					var self = this,
 						parsePromise,
-						ngDeferred;
+					ngDeferred;
 
 					ngDeferred = $q.defer();
+
+					// ensures that calling the unpatched method
+					// when invoked internally
+					if(isPatchRunning) {
+						return method.apply(self, arguments);
+					}
+
+					// patch is running
+					isPatchRunning = true;
 
 					// invoke method
 					parsePromise = method.apply(self, arguments)
@@ -181,9 +214,14 @@
 						bind(ngDeferred, ngDeferred.reject)
 					);
 
+					// patch finished running
+					isPatchRunning = false;
+
 					// return $q promise
 					return ngDeferred.promise
+					// run all success interceptors
 					.then(runSuccessInterceptors)
+					// run all error interceptors
 					.catch(bind(null, runErrorInterceptors, self));
 
 				};
@@ -193,7 +231,7 @@
 			var patchMethods = function(object, methods, className) {
 				forEach(methods, function(methodName) {
 					if(!isFunction(object[methodName])) {
-						throw new Error('[parse-angular-patch]: ' + className + '.' + methodName + ' does not exist, patching failed!');
+						throwError(className + '.' + methodName + ' does not exist, patching failed!');
 					}
 					object[methodName] = patchMethod(object[methodName]);
 				});
@@ -328,7 +366,7 @@
 					var hasMoreToLoad = self.hasMoreToLoad = objects.length === self._limit;
 
 					self.collection = hasMoreToLoad?
-						self.collection.concat(objects):
+					self.collection.concat(objects):
 						self.collection.slice(self.index).concat(objects);
 
 					return objects;
@@ -340,19 +378,7 @@
 
 	}]);
 
-}).apply(null, (function(context) {
 
-	var ng = context.angular;
-	var Parse = context.Parse;
 
-	if(!ng) {
-		throw new Error('[parse-angular-patch]: AngularJS was not loaded');
-	}
+})(window);
 
-	if(!Parse) {
-		throw new Error('[parse-angular-patch]: Parse was not loaded');
-	}
-
-	return [ng, Parse];
-
-})(window));
