@@ -5,15 +5,16 @@
 	var forEach = ng.forEach,
 		module = ng.module,
 		bind = ng.bind,
-		isObject = angular.isObject,
-		isArray = angular.isArray,
-		extend = angular.extend,
-		copy = angular.copy,
-		uppercase = angular.uppercase,
+		isObject = ng.isObject,
+		isArray = ng.isArray,
+		extend = ng.extend,
+		copy = ng.copy,
+		uppercase = ng.uppercase,
 		isUndefined = ng.isUndefined,
 		isDefined = ng.isDefined,
 		isFunction = ng.isFunction,
 		isNumber = ng.isNumber,
+		isString = ng.isString,
 		noop = ng.noop;
 
 	var THEN_KEY = 'then';
@@ -46,8 +47,7 @@
 
 		provider.$get = ['$q', '$injector', '$rootScope', function($q, $injector, $rootScope) {
 
-			var isPatchRunning = false,
-				successInterceptors = [],
+			var successInterceptors = [],
 				errorInterceptors = [];
 
 			//-------------------------------------
@@ -121,7 +121,7 @@
 			forEach(provider.interceptors, function(interceptor, index) {
 
 				// inject interceptors
-				interceptor = angular.isString(interceptor)?
+				interceptor = isString(interceptor)?
 					// get interceptor as a service or factory
 					$injector.get(interceptor):
 					// get interceptor as a factory function
@@ -161,12 +161,6 @@
 				return sequentialPromise($q.reject(error), errorInterceptors, CATCH_KEY);
 			};
 
-			var digest = function() {
-				if(!$rootScope.$$phase) {
-					$rootScope.$digest();
-				}
-			};
-
 			// function to create a patched method
 			var patchMethod = function(method) {
 
@@ -175,15 +169,6 @@
 					var self = this,
 						parsePromise,
 						ngDeferred;
-
-					// Don't apply $q promise when called internally
-					if(isPatchRunning) {
-						return method.apply(self, arguments);
-					}
-
-					// ensures that all internal Parse.Promise calls are uninterrupted
-					// by our $q promsie patch
-					isPatchRunning = true;
 
 					ngDeferred = $q.defer();
 
@@ -195,9 +180,6 @@
 						// reject with $q promise
 						bind(ngDeferred, ngDeferred.reject)
 					);
-
-					// disabling Parse.Promise interruption
-					isPatchRunning = false;
 
 					// return $q promise
 					return ngDeferred.promise
@@ -251,8 +233,10 @@
 
 	});
 
-	angular.module('parse-angular.enhance', ['parse-angular'])
+	module('parse-angular.enhance', ['parse-angular'])
 	.run(['Parse', '$q', function(Parse, $q) {
+
+		var CREATED_AT_KEY = 'createdAt';
 
 		var classMap = {};
 
@@ -305,7 +289,7 @@
 
 				}
 
-			} else if(angular.isString(protoProps)) {
+			} else if(isString(protoProps)) {
 				className = protoProps;
 			}
 
@@ -317,63 +301,40 @@
 
 		// Enhance Parse Query prototype
 		extend(Parse.Query.prototype, {
-			hasMoreToLoad: function() {
-				var self = this;
-				var newObjects = self.newObjects;
-				return (isArray(newObjects) &&
-					newObjects.length === self.getLimit()) ||
-					isUndefined(newObjects);
-			},
-			getLimit: function() {
-				var limit = this._limit;
-				return isNumber(limit) && limit !== -1? limit: 100;
-			},
-			getSkip: function() {
-				var skip = this._skip;
-				return isNumber(skip)? skip: 0;
-			},
-			storeOriginal: function() {
 
-				var self = this;
+			loadMore: function() {
 
-				if(isUndefined(self.objects) && isUndefined(self.newObjects)) {
-					self._copy = angular.copy(self);
+				var self = this,
+					last, date;
+
+				if(self._limit === -1) {
+					self.limit(100);
 				}
 
-			},
-			reset: function() {
-				var self = this;
-				extend(self, self._copy);
-			},
-			loadMore: function() {
-				var self = this;
-				var limit = self._limit = self.getLimit();
-				var skip = self._skip = self.getSkip();
-
-				self.storeOriginal();
+				if(!isArray(self.collection)) {
+					self.hasMoreToLoad = true;
+					self.collection = [];
+				} else if(self.collection.length > 0) {
+					last = self.collection[self.collection.length - 1];
+					date = last.get(CREATED_AT_KEY);
+					if(date) {
+						self.greaterThanOrEqualTo(CREATED_AT_KEY, new Date(new Date(date)));
+					}
+				}
 
 				return self.find()
 				.then(function(objects) {
-					self.newObjects = objects || [];
-					self.objects = (self.objects || []).concat(objects);
-					if(self.hasMoreToLoad()) {
-						self._skip = skip + limit;
-					}
+
+					var hasMoreToLoad = self.hasMoreToLoad = objects.length === self._limit;
+
+					self.collection = hasMoreToLoad?
+						self.collection.concat(objects):
+						self.collection.slice(self.index).concat(objects);
+
 					return objects;
+
 				});
-			},
-			loadMoreWhile: function(until) {
-				var self = this;
 
-				if(isFunction(until)) {
-					if(until(self)) {
-						return self.loadMore()
-						.then(bind(self, self.loadMoreUntil, until));
-					}
-					return $q.when(self);
-				}
-
-				throw new Error('until callback is not a function');
 			}
 		});
 
